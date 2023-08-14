@@ -459,6 +459,35 @@ async function streamPipelineAsyncPromiseAbortTransform() {
         });
 }
 
+async function streamPipelineAsyncPromiseOptions() {
+    const { signal } = new AbortController();
+
+    // Empty options
+    pipelinePromise(process.stdin,
+        process.stdout,
+        {});
+
+    // options with signal property
+    pipelinePromise(process.stdin,
+        process.stdout,
+        { signal });
+
+    // options with end property
+    pipelinePromise(process.stdin,
+        process.stdout,
+        { end: false });
+
+    // options with both properties
+    pipelinePromise(process.stdin,
+        process.stdout,
+        { signal, end: false });
+
+    // options with undefined properties
+    pipelinePromise(process.stdin,
+        process.stdout,
+        { signal: undefined, end: undefined });
+}
+
 async function testConsumers() {
     const r = createReadStream('file.txt');
 
@@ -492,6 +521,9 @@ function stream_readable_pipe_test() {
     r.close();
     z.close();
     rs.close();
+
+    rs.destroy();
+    rs[Symbol.asyncDispose]();
 }
 
 function stream_duplex_allowHalfOpen_test() {
@@ -571,6 +603,34 @@ addAbortSignal(new AbortSignal(), new Readable());
     // When the param includes unsupported WritableStream
     // @ts-expect-error
     Writable.fromWeb(web, { write: true });
+}
+
+{
+    const duplex = new Duplex();
+    // $ExpectType { readable: ReadableStream<any>; writable: WritableStream<any>; }
+    Duplex.toWeb(duplex);
+}
+
+{
+    const readable = new ReadableStream();
+    const writable = new WritableStream();
+
+    // $ExpectType Duplex
+    Duplex.fromWeb({ readable, writable });
+
+    // Handles subset of DuplexOptions param
+    // $ExpectType Duplex
+    Duplex.fromWeb({ readable, writable }, { objectMode: true });
+
+    // When the param includes unsupported DuplexOptions
+    // @ts-expect-error
+    Duplex.fromWeb({ readable, writable }, { emitClose: true });
+
+    // $ExpectType Duplex
+    Duplex.from(readable);
+
+    // $ExpectType Duplex
+    Duplex.from(writable);
 }
 
 async function testReadableStream() {

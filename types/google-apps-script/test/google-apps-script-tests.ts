@@ -62,6 +62,7 @@ const createEvent = (): void => {
         attendees: [{ email: 'alice@example.com' }, { email: 'bob@example.com' }],
         // Red background. Use Calendar.Colors.get() for the full list.
         colorId: '11',
+        eventType: 'default',
     };
     event = Calendar.Events.insert(event, calendarId);
     Logger.log('Event ID: ' + event.id);
@@ -244,6 +245,11 @@ const createFolderAndGetDescription = () => {
 function onChange(e: GoogleAppsScript.Events.SheetsOnChange) {
     if (e.changeType === 'FORMAT') {
         console.log('Formatting change detected');
+    }
+    const sheetName = e.source?.getSheetName();
+    console.log(sheetName);
+    if (sheetName !== undefined) {
+        console.log('Success to get e.source field');
     }
 }
 
@@ -745,4 +751,28 @@ const sheetFontColorObjects = () => {
         [SpreadsheetApp.newColor().setRgbColor("#008000").build(), SpreadsheetApp.newColor().setRgbColor("#000080").build()],
     ];
     sheet.getRange("A1:B2").setFontColorObjects(multipleBuilders);
+};
+
+const utilitiesParseDate = () => {
+  Utilities.parseDate("2022/01/01", "GMT", "yyyy/MM/dd");
+};
+
+// Spreadsheet Cell Image test
+const sheetCellImage = () => {
+    const imageBuilder = SpreadsheetApp.newCellImage();
+    // set methods
+    imageBuilder.setAltTextTitle('Title');
+    imageBuilder.setAltTextDescription('Description');
+    imageBuilder.setSourceUrl('https://hostname/path/image.jpeg');
+    // get methods
+    imageBuilder.getAltTextTitle();
+    imageBuilder.getAltTextDescription();
+    imageBuilder.getContentUrl();
+    imageBuilder.getUrl();
+
+    const cellImage = imageBuilder.build();
+    cellImage.getAltTextTitle();
+    cellImage.getAltTextDescription();
+    cellImage.getContentUrl();
+    cellImage.getUrl();
 };

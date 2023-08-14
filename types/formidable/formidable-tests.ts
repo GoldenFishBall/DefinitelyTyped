@@ -31,6 +31,7 @@ const options: Options = {
     minFileSize: 1,
     multiples: false,
     uploadDir: "/dir",
+    createDirsFromUploads: false,
     filter: (part) => {
         // $ExpectType Part
         part;
@@ -75,7 +76,7 @@ Formidable.DEFAULT_OPTIONS;
 defaultOptions;
 defaultOptions.enabledPlugins; // $ExpectType EnabledPlugins
 
-options.fileWriteStreamHandler; // $ExpectType (() => Writable) | undefined
+options.fileWriteStreamHandler; // $ExpectType ((file?: VolatileFile | undefined) => Writable) | undefined
 
 // $ExpectType EnabledPlugins
 enabledPlugins;
@@ -83,7 +84,7 @@ enabledPlugins;
 // $ExpectType EnabledPlugins
 plugins;
 
-// $ExpectType PersistentFile
+// $ExpectType VolatileFile
 new VolatileFile(file);
 
 // $ExpectType PersistentFile
@@ -176,11 +177,11 @@ form.onPart = part => {
     form._handlePart(part);
 };
 
-http.createServer(req => {
+http.createServer(async req => {
     // $ExpectType IncomingMessage
     req;
 
-    form.parse(req, (err, fields, files) => {
+    form.parse(req, (err, fields, files) => { // testing with callback
         // $ExpectType any
         err;
         // $ExpectType Fields
@@ -188,10 +189,14 @@ http.createServer(req => {
         // $ExpectType Files
         files;
     });
-});
 
-http.createServer(req => {
     form.parse(req); // testing without callback
+
+    const [fields, files] = await form.parse(req); // testing with promise
+    // $ExpectType Fields
+    fields;
+    // $ExpectType Files
+    files;
 });
 
 // $ExpectType IncomingForm

@@ -90,6 +90,9 @@ for (const action of submitRelatedActions) {
 
         if (agent.custom.user) {
             console.log(agent.custom.user.id);
+            console.log(agent.src);
+            console.log(agent.clientId);
+            console.log(agent.connectTime);
         }
         console.log(
             request.action,
@@ -207,6 +210,17 @@ backend.use('sendPresence', (context, callback) => {
         context.presence.ch,
         context.presence.id,
     );
+    callback();
+});
+
+backend.use('apply', (context, callback) => {
+    context.$fixup([{insert: 'foo'}]);
+    callback();
+});
+
+backend.use('commit', (context, callback) => {
+    // @ts-expect-error :: don't allow $fixup outside of 'apply'
+    context.$fixup([{insert: 'foo'}]);
     callback();
 });
 
@@ -397,7 +411,17 @@ function startClient(callback) {
         console.log(snapshot.data);
     });
 
+    connection.fetchSnapshot('examples', 'foo', null, (error, snapshot: ShareDBClient.Snapshot) => {
+        if (error) throw error;
+        console.log(snapshot.data);
+    });
+
     connection.fetchSnapshotByTimestamp('examples', 'bar', Date.now(), (error, snapshot) => {
+        if (error) throw error;
+        console.log(snapshot.data);
+    });
+
+    connection.fetchSnapshotByTimestamp('examples', 'bar', null, (error, snapshot) => {
         if (error) throw error;
         console.log(snapshot.data);
     });

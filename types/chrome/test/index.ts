@@ -568,6 +568,13 @@ function testGetManifest() {
         name: 'manifest version 3',
         version: '3.0.0',
         background: { service_worker: 'bg-sw.js', type: 'module' },
+        content_scripts: [
+            {
+                matches: ["https://github.com/*"],
+                js: ["cs.js"],
+                world: "MAIN"
+            }
+        ],
         content_security_policy: {
             extension_pages: "default-src 'self'",
             sandbox: "default-src 'self'",
@@ -827,6 +834,30 @@ chrome.runtime.onInstalled.addListener((details) => {
     details.reason = 'not-real-reason';
 })
 
+function testRuntimeOnMessageAddListener() {
+    // @ts-expect-error
+    chrome.runtime.onMessage.addListener();
+    // @ts-expect-error
+    chrome.runtime.onMessage.addListener((_1, _2, _3, _4) => {});
+
+    chrome.runtime.onMessage.addListener((_, sender) => {
+        console.log(
+            sender.documentId,
+            sender.documentLifecycle,
+            sender.frameId,
+            sender.id,
+            sender.nativeApplication,
+            sender.origin,
+            sender.tab,
+            sender.tlsChannelId,
+            sender.url,
+        );
+
+        // @ts-expect-error
+        console.log(sender.documentLifecycle === 'invalid_value');
+    });
+}
+
 chrome.devtools.network.onRequestFinished.addListener((request: chrome.devtools.network.Request) => {
     request; // $ExpectType Request
     console.log('request: ', request);
@@ -1014,6 +1045,7 @@ function testBrowserAcionGetBadgeBackgroundColor() {
     chrome.browserAction.getBadgeBackgroundColor(undefined);
 }
 
+
 // https://developer.chrome.com/docs/extensions/reference/browserAction/#method-getBadgeText
 function testBrowserAcionGetBadgeText() {
     chrome.browserAction.getBadgeText({}, console.log);
@@ -1175,15 +1207,28 @@ async function testActionForPromise() {
     await chrome.action.enable(0);
     await chrome.action.getBadgeBackgroundColor({});
     await chrome.action.getBadgeText({});
+    const getBackTextColor1: chrome.action.ColorArray = await chrome.action.getBadgeTextColor({});
+    const getBackTextColor2: chrome.action.ColorArray = await chrome.action.getBadgeTextColor({ tabId: 0 });
     await chrome.action.getPopup({});
     await chrome.action.getTitle({});
     await chrome.action.getUserSettings();
+    const isEnabled1: boolean = await chrome.action.isEnabled();
+    const isEnabled2: boolean = await chrome.action.isEnabled(0);
     await chrome.action.openPopup({ windowId: 1 });
     await chrome.action.setBadgeBackgroundColor({ color: 'white' });
     await chrome.action.setBadgeText({ text: 'text1' });
+    await chrome.action.setBadgeTextColor({ color: 'white' });
     await chrome.action.setIcon({ path: { '16': 'path/to/icon.png' } });
     await chrome.action.setPopup({ popup: 'popup1' });
     await chrome.action.setTitle({ title: 'title1' });
+}
+
+// https://developer.chrome.com/docs/extensions/reference/action/
+async function testActionForCallback() {
+    chrome.action.getBadgeTextColor({}, (color: chrome.action.ColorArray) => void 0);
+    chrome.action.getBadgeTextColor({ tabId: 0 }, (color: chrome.action.ColorArray) => void 0);
+    chrome.action.isEnabled(0, (isEnabled: boolean) => void 0);
+    chrome.action.isEnabled(undefined, (isEnabled: boolean) => void 0);
 }
 
 // https://developer.chrome.com/docs/extensions/reference/alarms/
@@ -1304,6 +1349,11 @@ async function testScriptingForPromise() {
         { id: 'id2', js: ['script2.js'], runAt: 'document_start', allFrames: true, world: 'ISOLATED' },
         { id: 'id3', css: ['style1.css'], excludeMatches: ['*://*.example.com/*'], runAt: 'document_end', allFrames: true, world: 'MAIN' },
     ]);
+    await chrome.scripting.updateContentScripts([
+        { id: 'id1', js: ['script1.js'] },
+        { id: 'id2', js: ['script2.js'], runAt: 'document_start', allFrames: true, world: 'ISOLATED' },
+        { id: 'id3', css: ['style1.css'], excludeMatches: ['*://*.example.com/*'], runAt: 'document_end', allFrames: true, world: 'MAIN' },
+    ])
     await chrome.scripting.unregisterContentScripts({ ids: ['id1', 'id2'] });
     await chrome.scripting.unregisterContentScripts({ files: ['script1.js', 'style1.css'] });
     await chrome.scripting.getRegisteredContentScripts();
@@ -1531,6 +1581,9 @@ function testTabsSendMessage() {
     chrome.tabs.sendMessage(3, "Hello World!", console.log);
     chrome.tabs.sendMessage(4, "Hello World!", {}).then(() => { });
     chrome.tabs.sendMessage(5, "Hello World!", {}, console.log);
+    chrome.tabs.sendMessage(6, "Hello World!", {frameId: 1}, console.log);
+    chrome.tabs.sendMessage(7, "Hello World!", {documentId: 'id'}, console.log);
+    chrome.tabs.sendMessage(8, "Hello World!", {documentId: 'id', frameId: 0}, console.log);
     chrome.tabs.sendMessage<string>(6, "Hello World!", console.log);
     chrome.tabs.sendMessage<string, number>(7, "Hello World!", console.log);
     // @ts-expect-error
@@ -1972,4 +2025,66 @@ function testFileSystemProvider() {
             errorCallback: (error: string) => void,
         ) => {},
     );
+}
+
+// https://developer.chrome.com/docs/extensions/reference/sessions/
+function testSessions() {
+    const myMax = { maxResults: 1 };
+    chrome.sessions.getDevices(devices => { })
+    chrome.sessions.getDevices({}, devices => { });
+    chrome.sessions.getDevices(myMax, devices => { });
+    chrome.sessions.getRecentlyClosed(sessions => {});
+    chrome.sessions.getRecentlyClosed({}, sessions => { });
+    chrome.sessions.getRecentlyClosed(myMax, sessions => { });
+    chrome.sessions.restore(restoredSession => { });
+    chrome.sessions.restore('myString', restoredSession => { });
+    chrome.sessions.onChanged.addListener(() => { });
+}
+
+// https://developer.chrome.com/docs/extensions/reference/sessions/
+async function testSessionsForPromise() {
+    const myMax = { maxResults: 1 };
+    await chrome.sessions.getDevices();
+    await chrome.sessions.getDevices({});
+    await chrome.sessions.getDevices(myMax);
+    await chrome.sessions.getRecentlyClosed();
+    await chrome.sessions.getRecentlyClosed({});
+    await chrome.sessions.getRecentlyClosed(myMax);
+    await chrome.sessions.restore();
+    await chrome.sessions.restore('myString');
+}
+
+// Test for chrome.sidePanel API
+function testSidePanelAPI() {
+    let getPanelOptions: chrome.sidePanel.GetPanelOptions = {
+        tabId: 123,
+    };
+
+    chrome.sidePanel.getOptions(getPanelOptions, (options: chrome.sidePanel.PanelOptions) => {
+        console.log(options.enabled);
+        console.log(options.path);
+        console.log(options.tabId);
+    });
+
+    chrome.sidePanel.getPanelBehavior((behavior: chrome.sidePanel.PanelBehavior) => {
+        console.log(behavior.openPanelOnActionClick);
+    });
+
+    let setPanelOptions: chrome.sidePanel.PanelOptions = {
+        enabled: true,
+        path: 'path/to/sidePanel.html',
+        tabId: 123,
+    };
+
+    chrome.sidePanel.setOptions(setPanelOptions, () => {
+        console.log('Options set successfully.');
+    });
+
+    let setPanelBehavior: chrome.sidePanel.PanelBehavior = {
+        openPanelOnActionClick: true,
+    };
+
+    chrome.sidePanel.setPanelBehavior(setPanelBehavior, () => {
+        console.log('Behavior set successfully.');
+    });
 }

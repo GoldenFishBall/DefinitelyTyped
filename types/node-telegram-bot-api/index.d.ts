@@ -288,6 +288,7 @@ declare namespace TelegramBot {
         photo_size?: number | undefined;
         photo_width?: number | undefined;
         photo_height?: number | undefined;
+        start_parameter?: string | undefined;
         need_name?: boolean | undefined;
         need_phone_number?: boolean | undefined;
         need_email?: boolean | undefined;
@@ -406,6 +407,10 @@ declare namespace TelegramBot {
 
     interface PinChatMessageOptions {
         disable_notification?: boolean | undefined;
+    }
+
+    interface UnpinChatMessageOptions {
+        message_id?: number | undefined;
     }
 
     /// TELEGRAM TYPES ///
@@ -1678,7 +1683,7 @@ declare class TelegramBot extends EventEmitter<
 
     pinChatMessage(chatId: TelegramBot.ChatId, messageId: number, options?: TelegramBot.PinChatMessageOptions): Promise<boolean>;
 
-    unpinChatMessage(chatId: TelegramBot.ChatId, messageId?: number): Promise<boolean>;
+    unpinChatMessage(chatId: TelegramBot.ChatId, options?: TelegramBot.UnpinChatMessageOptions): Promise<boolean>;
 
     unpinAllChatMessages(chatId: TelegramBot.ChatId): Promise<boolean>;
 
@@ -1840,7 +1845,6 @@ declare class TelegramBot extends EventEmitter<
         description: string,
         payload: string,
         providerToken: string,
-        startParameter: string,
         currency: string,
         prices: ReadonlyArray<TelegramBot.LabeledPrice>,
         options?: TelegramBot.SendInvoiceOptions,

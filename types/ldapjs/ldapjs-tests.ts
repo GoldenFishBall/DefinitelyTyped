@@ -40,9 +40,13 @@ client.search('o=example', opts, (err, res): void => {
     });
 
     res.on('searchEntry', entry => {
+        entry.dn;
+        entry.attributes[0].values[0];
+        entry.attributes[0].vals[0]; // should be marked as deprecated
         entry.json.objectName;
-        entry.object.dn;
-        entry.raw.dn;
+        entry.pojo.type;
+        entry.pojo.attributes[0].type;
+        entry.pojo.attributes[0].values[0];
     });
 
     res.on('page', function (result, cb) {

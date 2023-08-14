@@ -788,6 +788,21 @@ const awsServerless: Aws.Serverless = {
                             }
                         }
                     }
+                }, {
+                    kafka: {
+                        accessConfigurations: {
+                            saslPlainAuth: 'mySecretManagerARN',
+                        },
+                        bootstrapServers: [
+                            'abc3.xyz.com:9092',
+                            'abc2.xyz.com:9092',
+                        ],
+                        topic: 'MySelfManagedKafkaTopic',
+                        batchSize: 100,
+                        maximumBatchingWindow: 30,
+                        enabled: true,
+                        consumerGroupId: 'MyConsumerGroupId',
+                    }
                 }
             ],
             url: {

@@ -1,4 +1,4 @@
-// Type definitions for formidable 2.0
+// Type definitions for formidable 3.4
 // Project: https://github.com/node-formidable/formidable
 // Definitions by: Wim Looman <https://github.com/Nemo157>
 //                 Martin Badin <https://github.com/martin-badin>
@@ -173,7 +173,7 @@ declare namespace formidable {
          *
          * @default null
          */
-        fileWriteStreamHandler?: (() => Writable) | undefined;
+        fileWriteStreamHandler?: ((file?: VolatileFile) => Writable) | undefined;
 
         /**
          * when you call the .parse method, the files argument (of the callback) will contain arrays of
@@ -183,6 +183,13 @@ declare namespace formidable {
          * @default false
          */
         multiples?: boolean | undefined;
+
+        /**
+         * If true, makes direct folder uploads possible.
+         *
+         * @default false
+         */
+        createDirsFromUploads?: boolean | undefined;
 
         /**
          * Use it to control newFilename. Must return a string. Will be joined with
@@ -198,10 +205,10 @@ declare namespace formidable {
     }
 
     interface Fields {
-        [field: string]: string | string[];
+        [field: string]: string[];
     }
     interface Files {
-        [file: string]: File | File[];
+        [file: string]: File[];
     }
 
     interface Part extends Stream {
@@ -213,7 +220,7 @@ declare namespace formidable {
     /**
      * @link https://github.com/node-formidable/formidable#file
      */
-    interface FileJSON extends Pick<File, "size" | "filepath" | "originalFilename" | "mimetype" | "hash"> {
+    interface FileJSON extends Pick<File, "size" | "filepath" | "originalFilename" | "mimetype" | "hash" | "newFilename"> {
         length: number;
         mimetype: string | null;
         mtime: Date | null;

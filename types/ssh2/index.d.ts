@@ -3,7 +3,6 @@
 // Definitions by: Qubo <https://github.com/tkQubo>
 //                 Ron Buckton <https://github.com/rbuckton>
 //                 Will Boyce <https://github.com/wrboyce>
-//                 Lucas Motta <https://github.com/lucasmotta>
 //                 Tom Xu <https://github.com/hengkx>
 //                 Leo Toneff <https://github.com/bragle>
 //                 Lucian Buzzo <https://github.com/LucianBuzzo>
@@ -229,7 +228,7 @@ export interface Channel extends Duplex {
     /**
      * Session type-specific methods
      */
-    setWindow(rows: string, cols: string, height: string, width: string): void;
+    setWindow(rows: number, cols: number, height: number, width: number): void;
     signal(signalName: string): void;
     exit(status: number): void;
     exit(signalName: string, coreDumped?: boolean, msg?: string): void;
@@ -254,7 +253,7 @@ export interface ClientChannel extends Channel {
      * finishes. If the process finished normally, the process's return value is passed to
      * the `exit` callback.
      */
-    on(event: 'exit', listener: (code: string) => void): this;
+    on(event: 'exit', listener: (code: number) => void): this;
     on(event: 'exit', listener: (code: null, signal: string, dump: string, desc: string) => void): this;
     on(event: string | symbol, listener: Function): this;
 }
@@ -1757,6 +1756,16 @@ export interface SFTPWrapper extends EventEmitter {
      * Sends an attrs response for the request identified by id.
      */
     attrs(reqId: number, attrs: Attributes): void;
+
+    /**
+     * Closes the channel.
+     */
+    end(): void;
+
+    /**
+     * Closes the channel.
+     */
+    destroy(): void;
 }
 
 export interface PublicKeyEntry {
@@ -1798,7 +1807,7 @@ export interface AgentInboundRequest {
 }
 
 export interface SigningRequestOptions {
-    hash: 'sha256' | 'sha512';
+    hash?: 'sha1' | 'sha256' | 'sha512';
 }
 
 export class AgentProtocol extends Duplex {

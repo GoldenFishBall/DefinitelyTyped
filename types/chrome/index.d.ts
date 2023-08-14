@@ -98,7 +98,10 @@ declare namespace chrome.accessibilityFeatures {
  * Manifest:  "action": {...}
  */
 declare namespace chrome.action {
-    export interface BadgeBackgroundColorDetails {
+    /** @deprecated Use BadgeColorDetails instead. */
+    export interface BadgeBackgroundColorDetails extends BadgeColorDetails {}
+
+    export interface BadgeColorDetails {
         /** An array of four integers in the range [0,255] that make up the RGBA color of the badge. For example, opaque red is [255, 0, 0, 255]. Can also be a string with a CSS value, with opaque red being #FF0000 or #F00. */
         color: string | ColorArray;
         /** Optional. Limits the change to when a particular tab is selected. Automatically resets when the tab is closed.  */
@@ -218,6 +221,19 @@ declare namespace chrome.action {
     export function getBadgeText(details: TabDetails): Promise<string>;
 
     /**
+     * Since Chrome 110.
+     * Gets the text color of the action.
+     */
+    export function getBadgeTextColor(details: TabDetails, callback: (result: ColorArray) => void): void;
+
+    /**
+     * Since Chrome 110.
+     * Gets the text color of the action.
+     * @return The `getBadgeTextColor` method provides its result via callback or returned as a `Promise` (MV3 only).
+     */
+    export function getBadgeTextColor(details: TabDetails): Promise<ColorArray>;
+
+    /**
      * Since Chrome 88.
      * Gets the html document set as the popup for this action.
      */
@@ -257,6 +273,19 @@ declare namespace chrome.action {
     export function getUserSettings(): Promise<UserSettings>;
 
     /**
+     * Since Chrome 110.
+     * Indicates whether the extension action is enabled for a tab (or globally if no tabId is provided). Actions enabled using only declarativeContent always return false.
+     */
+    export function isEnabled(tabId: number | undefined, callback: (isEnabled: boolean) => void): void;
+
+    /**
+     * Since Chrome 110.
+     * Indicates whether the extension action is enabled for a tab (or globally if no tabId is provided). Actions enabled using only declarativeContent always return false.
+     * @return True if the extension action is enabled.
+     */
+    export function isEnabled(tabId?: number): Promise<boolean>;
+
+    /**
      * Since Chrome 99+.
      * Opens the extension's popup.
      * @param options Specifies options for opening the popup.
@@ -278,13 +307,13 @@ declare namespace chrome.action {
      * Sets the background color for the badge.
      * @return The `setBadgeBackgroundColor` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
      */
-    export function setBadgeBackgroundColor(details: BadgeBackgroundColorDetails): Promise<void>;
+    export function setBadgeBackgroundColor(details: BadgeColorDetails): Promise<void>;
 
     /**
      * Since Chrome 88.
      * Sets the background color for the badge.
      */
-    export function setBadgeBackgroundColor(details: BadgeBackgroundColorDetails, callback: () => void): void;
+    export function setBadgeBackgroundColor(details: BadgeColorDetails, callback: () => void): void;
 
     /**
      * Since Chrome 88.
@@ -298,6 +327,19 @@ declare namespace chrome.action {
      * Sets the badge text for the action. The badge is displayed on top of the icon.
      */
     export function setBadgeText(details: BadgeTextDetails, callback: () => void): void;
+
+    /**
+     * Since Chrome 110.
+     * Sets the text color for the badge.
+     * @return The `setBadgeTextColor` method provides its result via callback or returned as a `Promise` (MV3 only). It has no parameters.
+     */
+    export function setBadgeTextColor(details: BadgeColorDetails): Promise<void>;
+
+    /**
+     * Since Chrome 100.
+     * Sets the text color for the badge.
+     */
+    export function setBadgeTextColor(details: BadgeColorDetails, callback: () => void): void;
 
     /**
      * Since Chrome 88.
@@ -1009,6 +1051,8 @@ declare namespace chrome.browsingData {
         downloads?: boolean | undefined;
         /** Optional. The browser's cache. Note: when removing data, this clears the entire cache: it is not limited to the range you specify.  */
         cache?: boolean | undefined;
+        /** Optional. The browser's cacheStorage.  */
+        cacheStorage?: boolean | undefined;
         /** Optional. Websites' appcaches.  */
         appcache?: boolean | undefined;
         /** Optional. Websites' file systems.  */
@@ -4800,7 +4844,7 @@ declare namespace chrome.input.ime {
         altgrKey?: boolean | undefined;
         /**
          * Optional.
-         * The ID of the request.
+         * The ID of the request. Use the requestId param from the onKeyEvent event instead.
          * @deprecated since Chrome 79.
          */
         requestId?: string | undefined;
@@ -4839,6 +4883,11 @@ declare namespace chrome.input.ime {
         capsLock?: boolean | undefined;
     }
 
+    /**
+      * The auto-capitalize type of the text field.
+      * @since Chrome 69.
+      */
+    export type AutoCapitalizeType = 'characters' | 'words' | 'sentences';
     /** Describes an input Context */
     export interface InputContext {
         /** This is used to specify targets of text field operations. This ID becomes invalid as soon as onBlur is called. */
@@ -4860,6 +4909,16 @@ declare namespace chrome.input.ime {
          * @since Chrome 40.
          */
         spellCheck: boolean;
+        /**
+         * The auto-capitalize type of the text field.
+         * @since Chrome 69.
+         */
+        autoCapitalize: AutoCapitalizeType;
+        /**
+         * Whether text entered into the text field should be used to improve typing suggestions for the user.
+         * @since Chrome 68.
+         */
+        shouldDoLearning: boolean;
     }
 
     /**
@@ -5015,6 +5074,18 @@ declare namespace chrome.input.ime {
          * @since Chrome 28.
          */
         windowPosition?: string | undefined;
+        /**
+         * Optional.
+         * The index of the current chosen candidate out of total candidates.
+         * @since Chrome 84.
+         */
+        currentCandidateIndex?: number | undefined;
+        /**
+         * Optional.
+         * The total number of candidates for the candidate window.
+         * @since Chrome 84.
+         */
+        totalCandidates?: number | undefined;
     }
 
     export interface CandidateWindowParameter {
@@ -5077,7 +5148,7 @@ declare namespace chrome.input.ime {
     export interface CandidateClickedEvent
         extends chrome.events.Event<(engineID: string, candidateID: number, button: string) => void> { }
 
-    export interface KeyEventEvent extends chrome.events.Event<(engineID: string, keyData: KeyboardEvent) => void> { }
+    export interface KeyEventEvent extends chrome.events.Event<(engineID: string, keyData: KeyboardEvent, requestId: string) => void> { }
 
     export interface DeactivatedEvent extends chrome.events.Event<(engineID: string) => void> { }
 
@@ -5835,7 +5906,13 @@ declare namespace chrome.offscreen {
         /** The offscreen document needs to use WebRTC APIs. */
         WEB_RTC = "WEB_RTC",
         /** The offscreen document needs to interact with the clipboard APIs(e.g. Navigator.clipboard). */
-        CLIPBOARD = "CLIPBOARD"
+        CLIPBOARD = "CLIPBOARD",
+        /** Specifies that the offscreen document needs access to localStorage. */
+        LOCAL_STORAGE = "LOCAL_STORAGE",
+        /** Specifies that the offscreen document needs to spawn workers. */
+        WORKERS = "WORKERS",
+        /** Specifies that the offscreen document needs to use navigator.geolocation. */
+        GEOLOCATION = "GEOLOCATION",
     }
 
     /** The parameters describing the offscreen document to create. */
@@ -6742,6 +6819,9 @@ declare namespace chrome.serial.onReceiveError {
     export function addListener(callback: (info: OnReceiveErrorInfo) => void): void;
 }
 
+type DocumentLifecycle = 'prerender' | 'active' | 'cached' | 'pending_deletion';
+type FrameType = 'outermost_frame' | 'fenced_frame' | 'sub_frame';
+
 ////////////////////
 // Runtime
 ////////////////////
@@ -6835,6 +6915,16 @@ declare namespace chrome.runtime {
          * @since Chrome 80.
          */
         origin?: string | undefined;
+        /**
+         * The lifecycle the document that opened the connection is in at the time the port was created. Note that the lifecycle state of the document may have changed since port creation.
+         * @since Chrome 106.
+         */
+        documentLifecycle?: DocumentLifecycle | undefined;
+        /**
+         * A UUID of the document that opened the connection.
+         * @since Chrome 106.
+         */
+        documentId?: string | undefined;
     }
 
     /**
@@ -6888,6 +6978,14 @@ declare namespace chrome.runtime {
     /** Result of the update check. */
     export type RequestUpdateCheckStatus = 'throttled' | 'no_update' | 'update_available';
 
+    /** Result of the update check. */
+    export interface RequestUpdateCheckResult {
+      /** The status of the update check. */
+      status: RequestUpdateCheckStatus;
+      /** The version of the available update. */
+      version: string;
+    }
+
     export interface PortDisconnectEvent extends chrome.events.Event<(port: Port) => void> { }
 
     export interface PortMessageEvent extends chrome.events.Event<(message: any, port: Port) => void> { }
@@ -6935,6 +7033,7 @@ declare namespace chrome.runtime {
         | 'declarativeContent'
         | 'declarativeNetRequest'
         | 'declarativeNetRequestFeedback'
+        | 'declarativeNetRequestWithHostAccess'
         | 'declarativeWebRequest'
         | 'desktopCapture'
         | 'documentScan'
@@ -6973,6 +7072,7 @@ declare namespace chrome.runtime {
         | 'scripting'
         | 'search'
         | 'sessions'
+        | 'sidePanel'
         | 'signedInDevices'
         | 'storage'
         | 'system.cpu'
@@ -7208,6 +7308,18 @@ declare namespace chrome.runtime {
             type?: 'module'; // If the service worker uses ES modules
         }
         | undefined;
+        content_scripts?: {
+            matches?: string[] | undefined;
+            exclude_matches?: string[] | undefined;
+            css?: string[] | undefined;
+            js?: string[] | undefined;
+            run_at?: string | undefined;
+            all_frames?: boolean | undefined;
+            match_about_blank?: boolean | undefined;
+            include_globs?: string[] | undefined;
+            exclude_globs?: string[] | undefined;
+            world?: "ISOLATED" | "MAIN" | undefined
+        }[] | undefined;
         content_security_policy?: {
             extension_pages?: string;
             sandbox?: string;
@@ -7272,6 +7384,12 @@ declare namespace chrome.runtime {
      * @since Chrome 25.
      */
     export function reload(): void;
+    /**
+     * Requests an update check for this app/extension.
+     * @since Chrome 109
+     * @return This only returns a Promise when the callback parameter is not specified, and with MV3+.
+     */
+    export function requestUpdateCheck(): Promise<RequestUpdateCheckResult>;
     /**
      * Requests an update check for this app/extension.
      * @since Chrome 25.
@@ -7516,6 +7634,7 @@ declare namespace chrome.scripting {
     interface RegisteredContentScript {
         id: string;
         allFrames?: boolean;
+        matchOriginAsFallback?: boolean;
         css?: string[];
         excludeMatches?: string[];
         js?: string[];
@@ -7633,6 +7752,19 @@ declare namespace chrome.scripting {
      */
     export function getRegisteredContentScripts(callback: (scripts: RegisteredContentScript[]) => void): void;
     export function getRegisteredContentScripts(filter: ContentScriptFilter, callback: (scripts: RegisteredContentScript[]) => void): void;
+
+    /**
+     * Updates one or more content scripts.
+     * @param scripts
+     */
+    export function updateContentScripts(scripts: RegisteredContentScript[]): Promise<void>;
+
+    /**
+     * Updates one or more content scripts.
+     * @param scripts
+     * @param callback
+     */
+    export function updateContentScripts(scripts: RegisteredContentScript[], callback: () => void): void;
 }
 
 ////////////////////
@@ -7706,6 +7838,11 @@ declare namespace chrome.sessions {
     export var MAX_SESSION_RESULTS: number;
 
     /**
+    * Gets the list of recently closed tabs and/or windows.
+    * @return The `getRecentlyClosed` method provides its result via callback or returned as a `Promise` (MV3 only).
+    */
+   export function getRecentlyClosed(filter?: Filter): Promise<Session[]>;
+    /**
      * Gets the list of recently closed tabs and/or windows.
      * @param callback
      * Parameter sessions: The list of closed entries in reverse order that they were closed (the most recently closed tab or window will be at index 0). The entries may contain either tabs or windows.
@@ -7719,6 +7856,11 @@ declare namespace chrome.sessions {
     export function getRecentlyClosed(callback: (sessions: Session[]) => void): void;
     /**
      * Retrieves all devices with synced sessions.
+     * @return The `getDevices` method provides its result via callback or returned as a `Promise` (MV3 only).
+     */
+    export function getDevices(filter?: Filter): Promise<Device[]>;
+    /**
+     * Retrieves all devices with synced sessions.
      * @param callback
      * Parameter devices: The list of sessions.Device objects for each synced session, sorted in order from device with most recently modified session to device with least recently modified session. tabs.Tab objects are sorted by recency in the windows.Window of the sessions.Session objects.
      */
@@ -7730,13 +7872,26 @@ declare namespace chrome.sessions {
      */
     export function getDevices(callback: (devices: Device[]) => void): void;
     /**
+     * Reopens a windows.Window or tabs.Tab.
+     * @param sessionId Optional.
+     * The windows.Window.sessionId, or tabs.Tab.sessionId to restore. If this parameter is not specified, the most recently closed session is restored.
+     * @return The `restore` method provides its result via callback or returned as a `Promise` (MV3 only).
+     */
+    export function restore(sessionId?: string): Promise<Session>;
+    /**
      * Reopens a windows.Window or tabs.Tab, with an optional callback to run when the entry has been restored.
      * @param sessionId Optional.
      * The windows.Window.sessionId, or tabs.Tab.sessionId to restore. If this parameter is not specified, the most recently closed session is restored.
      * @param callback Optional.
      * Parameter restoredSession: A sessions.Session containing the restored windows.Window or tabs.Tab object.
      */
-    export function restore(sessionId?: string, callback?: (restoredSession: Session) => void): void;
+    export function restore(sessionId: string, callback: (restoredSession: Session) => void): void;
+    /**
+     * Reopens a windows.Window or tabs.Tab, with an optional callback to run when the entry has been restored.
+     * @param callback Optional.
+     * Parameter restoredSession: A sessions.Session containing the restored windows.Window or tabs.Tab object.
+     */
+    export function restore(callback: (restoredSession: Session) => void): void;
 
     /** Fired when recently closed tabs and/or windows are changed. This event does not monitor synced sessions changes. */
     export var onChanged: SessionChangedEvent;
@@ -8312,7 +8467,7 @@ declare namespace chrome.system.display {
          * This is only valid for the primary display.
          * If provided, mirroringSourceId must not be provided and other properties may not apply.
          * This is has no effect if not provided.
-         * @see(See `enableUnifiedDesktop` for details).
+         * @see `enableUnifiedDesktop` for details
          * @since Chrome 59
          */
         isUnified?: boolean | undefined;
@@ -8365,7 +8520,7 @@ declare namespace chrome.system.display {
 
         /**
          * If set, updates the display's logical bounds origin along y-axis.
-         * @see[See documentation for boundsOriginX parameter.]
+         * @see boundsOriginX
          */
         boundsOriginY?: number | undefined;
 
@@ -8393,7 +8548,7 @@ declare namespace chrome.system.display {
     export interface DisplayInfoFlags {
         /**
          * If set to true, only a single DisplayUnitInfo will be returned by getInfo when in unified desktop mode.
-         * @see[enableUnifiedDesktop]
+         * @see enableUnifiedDesktop
          * @default false
          */
         singleUnified?: boolean | undefined;
@@ -9089,11 +9244,21 @@ declare namespace chrome.tabs {
          * @since Chrome 41.
          */
         frameId?: number | undefined;
+        /**
+         * Optional. Open a port to a specific document identified by documentId instead of all frames in the tab.
+         * @since Chrome 106.
+         */
+        documentId?: string;
     }
 
     export interface MessageSendOptions {
         /** Optional. Send a message to a specific frame identified by frameId instead of all frames in the tab. */
         frameId?: number | undefined;
+        /**
+         * Optional. Send a message to a specific document identified by documentId instead of all frames in the tab.
+         * @since Chrome 106.
+         */
+        documentId?: string;
     }
 
     export interface GroupOptions {
@@ -10546,8 +10711,16 @@ declare namespace chrome.webNavigation {
     export interface GetFrameResultDetails {
         /** The URL currently associated with this frame, if the frame identified by the frameId existed at one point in the given tab. The fact that an URL is associated with a given frameId does not imply that the corresponding frame still exists. */
         url: string;
+        /** A UUID of the document loaded. */
+        documentId: string;
+        /** The lifecycle the document is in. */
+        documentLifecycle: DocumentLifecycle;
         /** True if the last navigation in this frame was interrupted by an error, i.e. the onErrorOccurred event fired. */
         errorOccurred: boolean;
+        /** The type of frame the navigation occurred in. */
+        frameType: FrameType;
+        /** A UUID of the parent document owning this frame. This is not set if there is no parent. */
+        parentDocumentId?: string | undefined;
         /** ID of frame that wraps the frame. Set to -1 of no parent frame exists. */
         parentFrameId: number;
     }
@@ -10583,6 +10756,14 @@ declare namespace chrome.webNavigation {
     export interface WebNavigationFramedCallbackDetails extends WebNavigationUrlCallbackDetails {
         /** 0 indicates the navigation happens in the tab content window; a positive value indicates navigation in a subframe. Frame IDs are unique for a given tab and process. */
         frameId: number;
+        /** The type of frame the navigation occurred in. */
+        frameType: FrameType;
+        /** A UUID of the document loaded. (This is not set for onBeforeNavigate callbacks.) */
+        documentId?: string | undefined;
+        /** The lifecycle the document is in. */
+        documentLifecycle: DocumentLifecycle;
+        /** A UUID of the parent document owning this frame. This is not set if there is no parent. */
+        parentDocumentId?: string | undefined;
         /**
          * The ID of the process runs the renderer for this tab.
          * @since Chrome 22.
@@ -10848,8 +11029,8 @@ declare namespace chrome.webRequest {
         /** Optional. The HTTP request headers that are going to be sent out with this request. */
         requestHeaders?: HttpHeader[] | undefined;
         documentId: string;
-        documentLifecycle: "prerender" | "active" | "cached" | "pending_deletion";
-        frameType: "outermost_frame" | "fenced_frame" | "sub_frame";
+        documentLifecycle: DocumentLifecycle;
+        frameType: FrameType;
         frameId: number;
         initiator?: string | undefined;
         parentDocumentId?: string | undefined;
@@ -12186,4 +12367,40 @@ declare namespace chrome.declarativeNetRequest {
     /** Fired when a rule is matched with a request.
      * Only available for unpacked extensions with the declarativeNetRequestFeedback permission as this is intended to be used for debugging purposes only. */
     export var onRuleMatchedDebug: RuleMatchedDebugEvent;
+}
+
+////////////////////
+// SidePanel
+////////////////////
+/**
+ * Availability: @since Chrome 114. Manifest v3.
+ * https://developer.chrome.com/docs/extensions/reference/sidePanel/
+ * Permissions: "sidePanel"
+ */
+declare namespace chrome.sidePanel {
+    export interface GetPanelOptions {
+        tabId?: number;
+    }
+
+    export interface PanelBehavior {
+        openPanelOnActionClick?: boolean;
+    }
+
+    export interface PanelOptions {
+        enabled?: boolean;
+        path?: string;
+        tabId?: number;
+    }
+
+    export interface SidePanel {
+        default_path: string;
+    }
+
+    export function getOptions(options: GetPanelOptions, callback?: (options: PanelOptions) => void): Promise<PanelOptions>;
+
+    export function getPanelBehavior(callback?: (behavior: PanelBehavior) => void): Promise<PanelBehavior>;
+
+    export function setOptions(options: PanelOptions, callback?: () => void): Promise<void>;
+
+    export function setPanelBehavior(behavior: PanelBehavior, callback?: () => void): Promise<void>;
 }
